@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
     <style>
         body { font-family: 'Prompt', sans-serif; background-color: #f4f7f6; }
@@ -19,10 +20,14 @@
         .table-responsive { border-radius: 12px; overflow: hidden; }
         .nav-link { cursor: pointer; }
         
-        /* ปรับปรุงการแสดงผลตารางบนมือถือให้เป็นการ์ดแทนเพื่อให้อ่านง่าย */
+        /* สไตล์สำหรับหัวตารางที่กดคลิกเรียงลำดับได้ */
+        .sortable { cursor: pointer; position: relative; user-select: none; }
+        .sortable:hover { background-color: #146c43 !important; color: #fff; }
+        .sort-icon { font-size: 0.8rem; margin-left: 5px; }
+
         @media (max-width: 767.98px) {
             .responsive-table thead { display: none; }
-            .responsive-table tbody tr { display: block; card-shadow: 0 2px 5px rgba(0,0,0,0.05); background: #fff; margin-bottom: 15px; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px; }
+            .responsive-table tbody tr { display: block; background: #fff; margin-bottom: 15px; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px; }
             .responsive-table tbody td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 6px 10px; text-align: right; }
             .responsive-table tbody td::before { content: attr(data-label); font-weight: 600; text-align: left; color: #495057; }
             .responsive-table tbody td .btn { width: 100%; margin-top: 5px; }
@@ -136,14 +141,14 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle responsive-table">
+            <table class="table table-hover align-middle responsive-table" id="dataTable">
                 <thead class="table-success">
                     <tr>
-                        <th>วันที่บันทึก</th>
-                        <th>หน่วยงาน</th>
-                        <th>อุปกรณ์</th>
-                        <th>หน่วย/วัน</th>
-                        <th>ค่าไฟ/วัน</th>
+                        <th class="sortable" onclick="sortTable(0)">วันที่บันทึก <span class="sort-icon" id="sortIcon0">▼</span></th>
+                        <th class="sortable" onclick="sortTable(3)">หน่วยงาน <span class="sort-icon" id="sortIcon3"></span></th>
+                        <th class="sortable" onclick="sortTable(5)">อุปกรณ์ <span class="sort-icon" id="sortIcon5"></span></th>
+                        <th class="sortable" onclick="sortTable(9)">หน่วย/วัน <span class="sort-icon" id="sortIcon9"></span></th>
+                        <th class="sortable" onclick="sortTable(10)">ค่าไฟ/วัน <span class="sort-icon" id="sortIcon10"></span></th>
                         <th>จัดการ</th>
                     </tr>
                 </thead>
@@ -211,7 +216,7 @@
             <div class="col-12 col-xl-8 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท) แยกตามหน่วยงาน</h6>
-                    <div style="position: relative; height:300px;">
+                    <div style="position: relative; height:350px;">
                         <canvas id="barChart"></canvas>
                     </div>
                 </div>
@@ -219,7 +224,7 @@
             <div class="col-12 col-xl-4 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">สัดส่วนค่าใช้จ่ายตามประเภทอุปกรณ์ (%)</h6>
-                    <div style="position: relative; height:300px;">
+                    <div style="position: relative; height:350px;">
                         <canvas id="pieChart"></canvas>
                     </div>
                 </div>
@@ -238,9 +243,11 @@
     let barChartInstance = null;
     let pieChartInstance = null;
     
-    // ตั้งค่าตัวแปรสับหน้าตารางข้อมูล
+    // สถานะสำหรับการจัดการตาราง
     let currentPage = 1;
     const itemsPerPage = 50;
+    let currentSortColumn = 0; // คอลัมน์เริ่มต้นคือ "วันที่บันทึก"
+    let currentSortDirection = 'desc'; // ล่าสุดขึ้นก่อน
 
     async function fetchGAS(payload) {
         return fetch(API_URL, {
@@ -262,7 +269,7 @@
         }
     }
 
-    // คำนวณแบบฟอร์มบันทึกแบบ Real-time
+    // ระบบคำนวณแบบฟอร์มบันทึกแบบ Real-time
     document.querySelectorAll('.calc-input').forEach(input => {
         input.addEventListener('input', () => {
             let qty = parseFloat(document.getElementById('qty').value) || 0;
@@ -353,26 +360,27 @@
             let res = await fetchGAS({ action: 'getData' });
             if (res.status === 'success') {
                 allData = res.data;
-                filterTableData(); // เรียกใช้งานระบบฟิลเตอร์และแบ่งหน้าเริ่มต้น
+                filterTableData(); 
             }
         } catch (err) {
             document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ดึงข้อมูลไม่สำเร็จ</td></tr>';
         }
     }
 
-    // ระบบฟิลเตอร์ข้อมูลในตารางหน้า 2
+    // ระบบฟิลเตอร์ข้อมูลในตาราง
     function filterTableData() {
         let fDept = document.getElementById('tableFilterDept').value;
         let fCat = document.getElementById('tableFilterCategory').value;
 
-        // ฟิลเตอร์ข้อมูลตามเงื่อนไข
         filteredTableDataList = allData.filter(row => {
             let matchDept = fDept === "" || row[3] === fDept;
             let matchCat = fCat === "" || row[4] === fCat;
             return matchDept && matchCat;
         });
 
-        currentPage = 1; // ย้อนกลับมาหน้า 1 เสมอเมื่อมีการกรองข้อมูล
+        // หลังจากฟิลเตอร์ให้ทำการเรียงลำดับซ้ำอีกครั้งตามคอลัมน์ที่เลือกค้างไว้
+        executeSort();
+        currentPage = 1; 
         renderTableRows();
     }
 
@@ -382,7 +390,60 @@
         filterTableData();
     }
 
-    // แสดงผลข้อมูลตารางตามเลขหน้า (หน้าละ 50 แถว) และเพิ่ม Data Label สำหรับมือถือ
+    // ฟังก์ชันจัดการคลิกเปลี่ยนสถานะเรียงลำดับที่หัวข้อตาราง
+    function sortTable(columnIndex) {
+        if (currentSortColumn === columnIndex) {
+            // หากกดซ้ำคอลัมน์เดิม ให้สลับ ทิศทาง
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            // หากกดคอลัมน์ใหม่ เริ่มต้นที่เรียงจากมากไปน้อย (desc) เสมอตามใจสั่ง
+            currentSortColumn = columnIndex;
+            currentSortDirection = 'desc';
+        }
+        
+        // อัปเดตสัญลักษณ์ลูกศรที่หัวตาราง
+        updateSortIcons();
+        executeSort();
+        currentPage = 1; // กลับไปหน้าแรกหลังสลับลำดับข้อมูล
+        renderTableRows();
+    }
+
+    // จัดการเปลี่ยนรูปลูกศรบนหน้าจอ
+    function updateSortIcons() {
+        const columns = [0, 3, 5, 9, 10];
+        columns.forEach(col => {
+            let iconSpan = document.getElementById('sortIcon' + col);
+            if (col === currentSortColumn) {
+                iconSpan.innerText = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+            } else {
+                iconSpan.innerText = '';
+            }
+        });
+    }
+
+    // ฟังก์ชันสั่งจัดการสลับตำแหน่ง Array ข้อมูลจริง
+    function executeSort() {
+        filteredTableDataList.sort((a, b) => {
+            let valA = a[currentSortColumn];
+            let valB = b[currentSortColumn];
+
+            // หากเป็นคอลัมน์ที่เป็นตัวเลข (หน่วย/วัน หรือ ค่าไฟ/วัน) แปลงเป็น Float เพื่อคำนวณก่อนเปรียบเทียบ
+            if (currentSortColumn === 9 || currentSortColumn === 10 || currentSortColumn === 6 || currentSortColumn === 7) {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else {
+                // หากเป็น Text ทั่วไปให้เปรียบเทียบตามสายอักษรภาษาไทย
+                valA = valA.toString();
+                valB = valB.toString();
+            }
+
+            if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // แสดงผลข้อมูลตารางตามเลขหน้า (หน้าละ 50 แถว)
     function renderTableRows() {
         let tbody = document.getElementById('summaryTableBody');
         tbody.innerHTML = '';
@@ -393,12 +454,9 @@
             return;
         }
 
-        // เอาข้อมูลล่าสุดโชว์ด้านบนสุด
-        let reversedData = [...filteredTableDataList].reverse();
-
         let startIndex = (currentPage - 1) * itemsPerPage;
         let endIndex = startIndex + itemsPerPage;
-        let pageData = reversedData.slice(startIndex, endIndex);
+        let pageData = filteredTableDataList.slice(startIndex, endIndex);
 
         pageData.forEach(row => {
             tbody.innerHTML += `
@@ -418,7 +476,6 @@
         renderPaginationControls();
     }
 
-    // แสดงปุ่มสลับหน้า Pagination
     function renderPaginationControls() {
         let totalPages = Math.ceil(filteredTableDataList.length / itemsPerPage);
         let paginationUl = document.getElementById('tablePagination');
@@ -426,15 +483,12 @@
 
         if(totalPages <= 1) return;
 
-        // ปุ่มย้อนกลับ
         paginationUl.innerHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" onclick="changePage(${currentPage - 1})">ก่อนหน้า</a></li>`;
 
-        // ลูปสร้างเลขหน้า
         for(let i = 1; i <= totalPages; i++) {
             paginationUl.innerHTML += `<li class="page-item ${currentPage === i ? 'active' : ''}"><a class="page-link" onclick="changePage(${i})">${i}</a></li>`;
         }
 
-        // ปุ่มถัดไป
         paginationUl.innerHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" onclick="changePage(${currentPage + 1})">ถัดไป</a></li>`;
     }
 
@@ -479,7 +533,7 @@
             let res = await fetchGAS({ action: 'getData' });
             if (res.status === 'success') {
                 allData = res.data;
-                updateDashboardView(); // ประมวลผลและวาดกราฟพร้อมคำนวณค่าไฟ
+                updateDashboardView(); 
             }
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการโหลดแดชบอร์ด' });
@@ -496,7 +550,6 @@
         let costByDept = {};
         let costByCategory = {};
 
-        // ลูปคัดกรองข้อมูลและประมวลผลรวม
         allData.forEach(row => {
             let matchDept = fDept === "" || row[3] === fDept;
             let matchCat = fCat === "" || row[4] === fCat;
@@ -515,7 +568,7 @@
             }
         });
 
-        // 1. อัปเดตตัวเลขการคำนวณค่าไฟ (รายวัน / รายเดือน / รายปี) สู่หน้าเว็บ
+        // อัปเดตตัวเลขการคำนวณค่าไฟ (รายวัน / รายเดือน / รายปี)
         document.getElementById('sumUnitsDay').innerText = totalUnitsDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('sumCostDay').innerText = totalCostDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -525,7 +578,7 @@
         document.getElementById('sumUnitsYear').innerText = (totalUnitsDay * 365).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('sumCostYear').innerText = (totalCostDay * 365).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-        // 2. เรนเดอร์กราฟแท่ง (Bar Chart)
+        // เรนเดอร์กราฟแท่ง (Bar Chart)
         if(barChartInstance) barChartInstance.destroy();
         let barCtx = document.getElementById('barChart').getContext('2d');
         barChartInstance = new Chart(barCtx, {
@@ -542,7 +595,10 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
 
-        // 3. เรนเดอร์กราฟโดนัท (Doughnut Chart)
+        // คำนวณหาเปอร์เซ็นต์รวมทั้งหมดเพื่อส่งเข้าไปวาดและสลักลงเนื้อกราฟวงกลม
+        let totalCategoryCostSum = Object.values(costByCategory).reduce((a, b) => a + b, 0);
+
+        // เรนเดอร์กราฟโดนัท (Doughnut Chart)
         if(pieChartInstance) pieChartInstance.destroy();
         let pieCtx = document.getElementById('pieChart').getContext('2d');
         pieChartInstance = new Chart(pieCtx, {
@@ -554,7 +610,24 @@
                     backgroundColor: ['#fd7e14', '#0d6efd', '#ffc107', '#20c997', '#6f42c1', '#adb5bd']
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            plugins: [ChartDataLabels], // เปิดใช้งานปลั๊กอิน DataLabels
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        color: '#fff', // สีของตัวอักษรบนแถบกราฟ
+                        font: { font: 'Prompt', weight: 'bold', size: 12 },
+                        formatter: (value, ctx) => {
+                            if(totalCategoryCostSum === 0) return "0%";
+                            let percentage = ((value / totalCategoryCostSum) * 100).toFixed(1) + '%';
+                            return percentage; // สลักข้อความ % บนหน้าแผ่นกราฟ
+                        },
+                        anchor: 'center',
+                        align: 'center'
+                    }
+                }
+            }
         });
 
         Swal.close();
