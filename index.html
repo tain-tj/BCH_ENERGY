@@ -196,11 +196,11 @@
         <div class="row g-2 mb-4 p-3 bg-light rounded-3">
             <div class="col-12 col-md-5">
                 <label class="form-label small fw-bold text-secondary">กรองสถิติตามหน่วยงาน</label>
-                <select class="form-select" id="dashFilterDept" onchange="updateDashboardView()"></select>
+                <select class="form-select" id="dashFilterDept" onchange="loadDashboard()"></select>
             </div>
             <div class="col-12 col-md-5">
                 <label class="form-label small fw-bold text-secondary">กรองสถิติตามประเภทอุปกรณ์</label>
-                <select class="form-select" id="dashFilterCategory" onchange="updateDashboardView()">
+                <select class="form-select" id="dashFilterCategory" onchange="loadDashboard()">
                     <option value="">-- ทั้งหมด --</option>
                     <option value="หลอดไฟ">หลอดไฟ</option>
                     <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
@@ -243,7 +243,7 @@
             <div class="col-12 col-xl-8 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท) แยกตามหน่วยงาน</h6>
-                    <div style="position: relative; height:300px;">
+                    <div style="position: relative; height:350px;">
                         <canvas id="barChart"></canvas>
                     </div>
                 </div>
@@ -251,7 +251,7 @@
             <div class="col-12 col-xl-4 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">สัดส่วนค่าใช้จ่ายตามประเภทอุปกรณ์ (%)</h6>
-                    <div style="position: relative; height:300px;">
+                    <div style="position: relative; height:350px;">
                         <canvas id="pieChart"></canvas>
                     </div>
                 </div>
@@ -264,11 +264,10 @@
 
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwI3pgRpmnz8DmhxB9CHm8MGuUHfM23Zhc_6Qoqodm_jsLtT5RvfyHo3YSta9h72u6S5Q/exec'; 
-    let allData = []; 
-    let filteredTableDataList = [];
     let barChartInstance = null;
     let pieChartInstance = null;
     
+    // ตั้งค่าตัวแปรควบคุมตารางคัดกรองจาก Server
     let currentPage = 1;
     const itemsPerPage = 50;
     let currentSortColumn = 0; 
@@ -294,7 +293,6 @@
         }
     }
 
-    // ฟังก์ชันย่อยของระบบคำนวณแปลงค่า BTU / Chiller
     function toggleCalcFields() {
         let type = document.getElementById('calcType').value;
         let sizeInput = document.getElementById('calcSize');
@@ -311,7 +309,7 @@
             sizeInput.placeholder = "ขนาด Chiller (TR - ตัน)";
             effInput.placeholder = "ประสิทธิภาพ (kW/TR)";
             sizeInput.value = "350";
-            effInput.value = "0.90"; // รวมอุปกรณ์ส่วนควบทั้ง Chiller Plant แล้ว
+            effInput.value = "0.90"; 
             lfField.classList.remove('d-none');
         }
         runPowerConverter();
@@ -327,7 +325,6 @@
         if (type === 'btu') {
             watts = size / eff;
         } else {
-            // สูตรคำนวณ: TR * kW/TR * (Load Factor/100) * 1000วัตต์
             watts = size * eff * (lf / 100) * 1000;
         }
         document.getElementById('calcResultDisplay').innerText = Math.round(watts).toLocaleString('th-TH');
@@ -336,7 +333,7 @@
     function applyCalculatedWatts() {
         let wattsStr = document.getElementById('calcResultDisplay').innerText.replace(/,/g, '');
         document.getElementById('watt').value = wattsStr;
-        document.getElementById('watt').dispatchEvent(new Event('input')); // กระตุ้นการคำนวณของฟอร์มใหญ่
+        document.getElementById('watt').dispatchEvent(new Event('input')); 
         Swal.fire({ icon: 'success', title: 'ดึงตัวเลขกำลังไฟเรียบร้อย', timer: 1000, showConfirmButton: false });
     }
 
@@ -381,7 +378,7 @@
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'ดึงรายชื่อหน่วยงานล้มเหลว' });
         }
-        runPowerConverter(); // สั่งให้แปลงวัตต์เริ่มต้นทำงาน
+        runPowerConverter(); 
     };
 
     async function saveData(e) {
@@ -422,13 +419,24 @@
         }
     }
 
+    // เรียกดึงข้อมูลหน้าตาราง (ดึงทีละ 50 แถวจากคลาวด์ ตามเลขหน้าปัจจุบัน)
     async function loadSummaryData() {
         document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-success my-3"></div><br>กำลังดึงข้อมูล...</td></tr>';
+        
+        let payload = {
+            action: 'getFilteredDataPaginated',
+            page: currentPage,
+            limit: itemsPerPage,
+            filterDept: document.getElementById('tableFilterDept').value,
+            filterCategory: document.getElementById('tableFilterCategory').value,
+            sortColumn: currentSortColumn,
+            sortDirection: currentSortDirection
+        };
+
         try {
-            let res = await fetchGAS({ action: 'getData' });
+            let res = await fetchGAS(payload);
             if (res.status === 'success') {
-                allData = res.data;
-                filterTableData(); 
+                renderTableRows(res.data, res.totalRows);
             }
         } catch (err) {
             document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ดึงข้อมูลไม่สำเร็จ</td></tr>';
@@ -436,18 +444,8 @@
     }
 
     function filterTableData() {
-        let fDept = document.getElementById('tableFilterDept').value;
-        let fCat = document.getElementById('tableFilterCategory').value;
-
-        filteredTableDataList = allData.filter(row => {
-            let matchDept = fDept === "" || row[3] === fDept;
-            let matchCat = fCat === "" || row[4] === fCat;
-            return matchDept && matchCat;
-        });
-
-        executeSort();
         currentPage = 1; 
-        renderTableRows();
+        loadSummaryData();
     }
 
     function clearTableFilters() {
@@ -464,9 +462,8 @@
             currentSortDirection = 'desc';
         }
         updateSortIcons();
-        executeSort();
         currentPage = 1; 
-        renderTableRows();
+        loadSummaryData();
     }
 
     function updateSortIcons() {
@@ -481,38 +478,15 @@
         });
     }
 
-    function executeSort() {
-        filteredTableDataList.sort((a, b) => {
-            let valA = a[currentSortColumn];
-            let valB = b[currentSortColumn];
-
-            if (currentSortColumn === 9 || currentSortColumn === 10 || currentSortColumn === 6 || currentSortColumn === 7) {
-                valA = parseFloat(valA) || 0;
-                valB = parseFloat(valB) || 0;
-            } else {
-                valA = valA.toString();
-                valB = valB.toString();
-            }
-
-            if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
-            if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }
-
-    function renderTableRows() {
+    function renderTableRows(pageData, totalRows) {
         let tbody = document.getElementById('summaryTableBody');
         tbody.innerHTML = '';
 
-        if (filteredTableDataList.length === 0) {
+        if (!pageData || pageData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">ไม่พบข้อมูลที่ตรงตามเงื่อนไขการค้นหา</td></tr>';
             document.getElementById('tablePagination').innerHTML = '';
             return;
         }
-
-        let startIndex = (currentPage - 1) * itemsPerPage;
-        let endIndex = startIndex + itemsPerPage;
-        let pageData = filteredTableDataList.slice(startIndex, endIndex);
 
         pageData.forEach(row => {
             tbody.innerHTML += `
@@ -530,10 +504,9 @@
             `;
         });
 
-        renderPaginationControls();
+        renderPaginationControls(totalRows);
     }
 
-    // ฟังก์ชันการทำงานของระบบลบข้อมูล (Delete) พร้อมระบบ SweetAlert2 ยืนยันสิทธิ์ก่อนลบ
     async function deleteRecord(id) {
         let confirmation = await Swal.fire({
             title: 'ยืนยันการลบรายการ?',
@@ -552,9 +525,7 @@
                 let res = await fetchGAS({ action: 'deleteData', id: id });
                 if (res.status === 'success') {
                     Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
-                    loadSummaryData(); // เรียกดึงข้อมูลใหม่เพื่อเขียนตารางใหม่ทันที
-                } else {
-                    throw new Error(res.message);
+                    loadSummaryData(); 
                 }
             } catch (err) {
                 Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
@@ -562,35 +533,50 @@
         }
     }
 
-    // ฟังก์ชันการส่งออกข้อมูล (Export) เป็น Excel (.CSV) รองรับภาษาไทยในระบบ Excel
-    function exportToExcelCSV() {
-        if(filteredTableDataList.length === 0) {
-            Swal.fire({ icon: 'warning', title: 'ไม่มีข้อมูล', text: 'ไม่พบแถวข้อมูลสำหรับส่งออกทำรายงานในขณะนี้' });
-            return;
-        }
-
-        let csvString = "\uFEFF"; // รหัสพิเศษ BOM เพื่อบังคับให้ Excel เปิดไฟล์ขึ้นมาเป็นภาษาไทยอ่านได้ 100%
-        csvString += "วันที่บันทึก,รหัสรันนิ่งไอดี,สายงาน,หน่วยงาน,ประเภทอุปกรณ์,ชื่อเครื่อง,จำนวนเครื่อง,กำลังไฟวัตต์,ชั่วโมงใช้งานต่อวัน,หน่วยไฟต่อวัน(kWh),ประมาณค่าไฟต่อวัน(บาท)\n";
-
-        filteredTableDataList.forEach(row => {
-            let processedRow = row.map(cellValue => {
-                let text = cellValue ? cellValue.toString().replace(/"/g, '""') : '';
-                return `"${text}"`;
+    // ระบบดาวน์โหลดส่งออกข้อมูลขนาดใหญ่แบบดึงก้อนเฉพาะตัวกรองปัจจุบันมาปั้นเป็น CSV ทันที
+    async function exportToExcelCSV() {
+        Swal.fire({ title: 'กำลังดึงข้อมูลเพื่อส่งออก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            let res = await fetchGAS({
+                action: 'getFilteredDataPaginated',
+                page: 1,
+                limit: 20000, // ดึงก้อนใหญ่ทั้งหมดที่กรองแล้วมาทำไฟล์ครั้งเดียว
+                filterDept: document.getElementById('tableFilterDept').value,
+                filterCategory: document.getElementById('tableFilterCategory').value,
+                sortColumn: currentSortColumn,
+                sortDirection: currentSortDirection
             });
-            csvString += processedRow.join(",") + "\n";
-        });
 
-        let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        let downloadLink = document.createElement("a");
-        downloadLink.href = URL.createObjectURL(blob);
-        downloadLink.download = `รายงานการใช้พลังงานไฟฟ้า_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.csv`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+            if(res.status === 'success' && res.data.length > 0) {
+                let csvString = "\uFEFF"; 
+                csvString += "วันที่บันทึก,รหัสไอดี,สายงาน,หน่วยงาน,ประเภทอุปกรณ์,ชื่อเครื่อง,จำนวนเครื่อง,กำลังไฟวัตต์,ชั่วโมงใช้งานต่อวัน,หน่วยไฟต่อวัน(kWh),ประมาณค่าไฟต่อวัน(บาท)\n";
+
+                res.data.forEach(row => {
+                    let processedRow = row.map(cellValue => {
+                        let text = cellValue ? cellValue.toString().replace(/"/g, '""') : '';
+                        return `"${text}"`;
+                    });
+                    csvString += processedRow.join(",") + "\n";
+                });
+
+                let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                let downloadLink = document.createElement("a");
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = `รายงานการใช้พลังงานไฟฟ้า_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.csv`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                Swal.close();
+            } else {
+                Swal.fire({ icon: 'warning', title: 'ไม่มีข้อมูลให้ส่งออก' });
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'ส่งออกล้มเหลว' });
+        }
     }
 
-    function renderPaginationControls() {
-        let totalPages = Math.ceil(filteredTableDataList.length / itemsPerPage);
+    function renderPaginationControls(totalRows) {
+        let totalPages = Math.ceil(totalRows / itemsPerPage);
         let paginationUl = document.getElementById('tablePagination');
         paginationUl.innerHTML = '';
 
@@ -607,7 +593,7 @@
 
     function changePage(page) {
         currentPage = page;
-        renderTableRows();
+        loadSummaryData();
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
@@ -638,45 +624,31 @@
         document.getElementById('btnCancelEdit').classList.add('d-none');
     }
 
+    // แดชบอร์ดความเร็วสูง: ดึงผลสรุปการคำนวณแบบก้อนเล็กจากคลาวด์โดยตรง
     async function loadDashboard() {
         Swal.fire({ title: 'กำลังคำนวณสถิติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        let payload = {
+            action: 'getDashboardStats',
+            filterDept: document.getElementById('dashFilterDept').value,
+            filterCategory: document.getElementById('dashFilterCategory').value
+        };
+
         try {
-            let res = await fetchGAS({ action: 'getData' });
+            let res = await fetchGAS(payload);
             if (res.status === 'success') {
-                allData = res.data;
-                updateDashboardView(); 
+                updateDashboardView(res.stats); 
             }
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการโหลดแดชบอร์ด' });
         }
     }
 
-    function updateDashboardView() {
-        let fDept = document.getElementById('dashFilterDept').value;
-        let fCat = document.getElementById('dashFilterCategory').value;
-
-        let totalUnitsDay = 0;
-        let totalCostDay = 0;
-        let costByDept = {};
-        let costByCategory = {};
-
-        allData.forEach(row => {
-            let matchDept = fDept === "" || row[3] === fDept;
-            let matchCat = fCat === "" || row[4] === fCat;
-
-            if (matchDept && matchCat) {
-                let dept = row[3];
-                let category = row[4];
-                let units = parseFloat(row[9]) || 0;
-                let cost = parseFloat(row[10]) || 0;
-
-                totalUnitsDay += units;
-                totalCostDay += cost;
-
-                costByDept[dept] = (costByDept[dept] || 0) + cost;
-                costByCategory[category] = (costByCategory[category] || 0) + cost;
-            }
-        });
+    function updateDashboardView(stats) {
+        let totalUnitsDay = stats.totalUnitsDay;
+        let totalCostDay = stats.totalCostDay;
+        let costByDept = stats.costByDept;
+        let costByCategory = stats.costByCategory;
 
         document.getElementById('sumUnitsDay').innerText = totalUnitsDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('sumCostDay').innerText = totalCostDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -742,7 +714,7 @@
     function clearDashFilters() {
         document.getElementById('dashFilterDept').value = "";
         document.getElementById('dashFilterCategory').value = "";
-        updateDashboardView();
+        loadDashboard();
     }
 </script>
 </body>
