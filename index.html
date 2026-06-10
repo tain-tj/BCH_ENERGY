@@ -11,17 +11,18 @@
     
     <style>
         body { font-family: 'Prompt', sans-serif; background-color: #f4f7f6; }
-        .page-section { display: none; animation: fadeIn 0.5s; }
+        .page-section { display: none; animation: fadeIn 0.4s ease-in-out; }
         .page-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { border-radius: 15px; border: none; }
-        .navbar { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .table-responsive { border-radius: 10px; overflow: hidden; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { border-radius: 16px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .navbar { box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .table-responsive { border-radius: 12px; overflow: hidden; }
+        .nav-link { cursor: pointer; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+<nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#">⚡ Energy Saver</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -29,9 +30,9 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link active" href="#" onclick="showPage('page-record', this)">📝 บันทึกข้อมูล</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('page-summary', this); loadSummaryData();">📋 ข้อมูลทั้งหมด</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('page-dashboard', this); loadDashboard();">📊 Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" onclick="showPage('page-record', this)">📝 บันทึกข้อมูล</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showPage('page-summary', this); loadSummaryData();">📋 ข้อมูลทั้งหมด</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showPage('page-dashboard', this); loadDashboard();">📊 Dashboard</a></li>
             </ul>
         </div>
     </div>
@@ -39,18 +40,19 @@
 
 <div class="container mt-4 mb-5">
     <div id="page-record" class="page-section active card p-4 shadow">
-        <h4 class="mb-4 text-success fw-bold">บันทึกการใช้พลังงานไฟฟ้า</h4>
+        <h4 class="mb-4 text-success fw-bold text-center text-md-start">บันทึกการใช้พลังงานไฟฟ้า</h4>
         <form id="recordForm" onsubmit="saveData(event)">
-            <input type="hidden" id="recordId"> <div class="row g-3">
+            <input type="hidden" id="recordId">
+            <div class="row g-3">
                 <div class="col-12 col-md-6">
-                    <label class="form-label">หน่วยงาน</label>
-                    <select class="form-select" id="dept" required>
-                        <option value="">กำลังโหลดข้อมูล...</option>
+                    <label class="form-label fw-medium">หน่วยงาน</label>
+                    <select class="form-select form-select-lg" id="dept" required>
+                        <option value="">🔄 กำลังโหลดข้อมูลหน่วยงาน...</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-6">
-                    <label class="form-label">ประเภทอุปกรณ์</label>
-                    <select class="form-select" id="category" required>
+                    <label class="form-label fw-medium">ประเภทอุปกรณ์</label>
+                    <select class="form-select form-select-lg" id="category" required>
                         <option value="หลอดไฟ">หลอดไฟ</option>
                         <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
                         <option value="Printer">Printer</option>
@@ -60,39 +62,41 @@
                     </select>
                 </div>
                 <div class="col-12">
-                    <label class="form-label">ชื่อเครื่อง/อุปกรณ์</label>
-                    <input type="text" class="form-control" id="name" required>
+                    <label class="form-label fw-medium">ชื่อเครื่อง/อุปกรณ์</label>
+                    <input type="text" class="form-control form-control-lg" id="name" placeholder="ระบุชื่อหรือรหัสเครื่อง" required>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label">จำนวนเครื่อง</label>
-                    <input type="number" class="form-control calc-input" id="qty" required>
+                    <label class="form-label fw-medium">จำนวนเครื่อง</label>
+                    <input type="number" class="form-control calc-input" id="qty" min="1" required>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label">กำลังไฟฟ้า (Watt/BTU)</label>
-                    <input type="number" class="form-control calc-input" id="watt" required>
+                    <label class="form-label fw-medium">กำลังไฟ (Watt/BTU)</label>
+                    <input type="number" class="form-control calc-input" id="watt" min="1" required>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label">ชั่วโมงใช้งาน/วัน</label>
-                    <input type="number" step="0.1" class="form-control calc-input" id="hours" required>
+                    <label class="form-label fw-medium">ใช้งาน (ชั่วโมง/วัน)</label>
+                    <input type="number" step="0.1" class="form-control calc-input" id="hours" min="0" max="24" required>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label">ค่าไฟ (บาท/หน่วย)</label>
-                    <input type="number" step="0.1" class="form-control calc-input" id="rate" value="5" required>
+                    <label class="form-label fw-medium">อัตราค่าไฟ (บาท)</label>
+                    <input type="number" step="0.01" class="form-control calc-input" id="rate" value="5.00" required>
                 </div>
-                <div class="col-12 col-md-6 mt-3">
-                    <div class="alert alert-info mb-0">
-                        <strong>หน่วยที่ใช้ต่อวัน:</strong> <span id="unitsDisplay">0.00</span> kWh
+                <div class="col-12 col-md-6 mt-4">
+                    <div class="alert alert-info border-0 p-3 mb-0 text-center">
+                        <span class="d-block text-muted small">หน่วยที่ใช้ต่อวัน</span>
+                        <span class="fs-3 fw-bold text-primary" id="unitsDisplay">0.00</span> <span class="small">kWh</span>
                         <input type="hidden" id="units">
                     </div>
                 </div>
-                <div class="col-12 col-md-6 mt-3">
-                    <div class="alert alert-warning mb-0">
-                        <strong>ค่าไฟต่อวัน:</strong> <span id="costDisplay">0.00</span> บาท
+                <div class="col-12 col-md-6 mt-4">
+                    <div class="alert alert-warning border-0 p-3 mb-0 text-center">
+                        <span class="d-block text-muted small">ประมาณการค่าไฟต่อวัน</span>
+                        <span class="fs-3 fw-bold text-danger" id="costDisplay">0.00</span> <span class="small">บาท</span>
                         <input type="hidden" id="cost">
                     </div>
                 </div>
             </div>
-            <button type="submit" class="btn btn-success mt-4 w-100 btn-lg shadow-sm" id="btnSave">💾 บันทึกข้อมูล</button>
+            <button type="submit" class="btn btn-success mt-4 w-100 btn-lg shadow-sm fw-bold" id="btnSave">💾 บันทึกข้อมูล</button>
             <button type="button" class="btn btn-secondary mt-2 w-100 d-none" id="btnCancelEdit" onclick="cancelEdit()">❌ ยกเลิกการแก้ไข</button>
         </form>
     </div>
@@ -100,11 +104,11 @@
     <div id="page-summary" class="page-section card p-4 shadow">
         <h4 class="mb-4 text-success fw-bold">ข้อมูลการใช้พลังงานทั้งหมด</h4>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle" style="min-width: 600px;">
                 <thead class="table-success">
                     <tr>
-                        <th>วันที่</th>
-                        <th>หน่วยงาน</th>
+                        <th>วันที่บันทึก</th>
+                        <th>สายงาน / หน่วยงาน</th>
                         <th>อุปกรณ์</th>
                         <th>หน่วย/วัน</th>
                         <th>ค่าไฟ/วัน</th>
@@ -112,25 +116,29 @@
                     </tr>
                 </thead>
                 <tbody id="summaryTableBody">
-                    <tr><td colspan="6" class="text-center">คลิกโหลดข้อมูลเพื่อแสดงผล...</td></tr>
+                    <tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <div id="page-dashboard" class="page-section card p-4 shadow">
-        <h4 class="mb-4 text-success fw-bold">สถิติการใช้พลังงานไฟฟ้า</h4>
+        <h4 class="mb-4 text-success fw-bold">แดชบอร์ดสถิติพลังงาน</h4>
         <div class="row">
-            <div class="col-12 col-lg-8 mb-4">
-                <div class="card p-3 shadow-sm border-0">
-                    <h6 class="text-center">เปรียบเทียบค่าไฟรายวัน (บาท) แยกตามหน่วยงาน</h6>
-                    <canvas id="barChart"></canvas>
+            <div class="col-12 col-xl-8 mb-4">
+                <div class="card p-3 shadow-sm border-0 h-100">
+                    <h6 class="fw-bold text-secondary mb-3 text-center">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท) แยกตามหน่วยงาน</h6>
+                    <div style="position: relative; height:300px;">
+                        <canvas id="barChart"></canvas>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-4 mb-4">
-                <div class="card p-3 shadow-sm border-0">
-                    <h6 class="text-center">สัดส่วนการใช้ไฟฟ้าตามประเภท</h6>
-                    <canvas id="pieChart"></canvas>
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card p-3 shadow-sm border-0 h-100">
+                    <h6 class="fw-bold text-secondary mb-3 text-center">สัดส่วนค่าใช้จ่ายตามประเภทอุปกรณ์ (%)</h6>
+                    <div style="position: relative; height:300px;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -140,29 +148,33 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // 🔴 วาง Web App URL ตัวใหม่ที่ได้จากการ Deploy ที่นี่ครับ
     const API_URL = 'https://script.google.com/macros/s/AKfycbwI3pgRpmnz8DmhxB9CHm8MGuUHfM23Zhc_6Qoqodm_jsLtT5RvfyHo3YSta9h72u6S5Q/exec'; 
-    let allData = []; // เก็บข้อมูลทั้งหมดไว้ในตัวแปรเพื่อใช้กับตารางและกราฟ
     let barChartInstance = null;
     let pieChartInstance = null;
 
-    // Helper Function: ส่ง Request ไปที่ GAS
     async function fetchGAS(payload) {
         return fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ป้องกันปัญหา CORS
+            mode: 'cors',
             body: JSON.stringify(payload)
         }).then(res => res.json());
     }
 
-    // สลับหน้าจอ
     function showPage(pageId, element) {
         document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
         if(element) element.classList.add('active');
+        
+        // ปิดแถบเมนูในมือถืออัตโนมัติเมื่อกดเลือกหน้า
+        let navbarCollapse = document.getElementById('navbarNav');
+        if(navbarCollapse.classList.contains('show')) {
+            new bootstrap.Collapse(navbarCollapse).toggle();
+        }
     }
 
-    // คำนวณอัตโนมัติ
+    // ระบบคำนวณอัตโนมัติแบบ Real-time
     document.querySelectorAll('.calc-input').forEach(input => {
         input.addEventListener('input', () => {
             let qty = parseFloat(document.getElementById('qty').value) || 0;
@@ -170,18 +182,17 @@
             let hours = parseFloat(document.getElementById('hours').value) || 0;
             let rate = parseFloat(document.getElementById('rate').value) || 5;
 
-            // สูตร: (Watt * จำนวน * ชั่วโมง) / 1000 = หน่วย(kWh)
             let units = (watt * qty * hours) / 1000;
             let cost = units * rate;
 
             document.getElementById('units').value = units.toFixed(2);
             document.getElementById('cost').value = cost.toFixed(2);
-            document.getElementById('unitsDisplay').innerText = units.toFixed(2);
-            document.getElementById('costDisplay').innerText = cost.toFixed(2);
+            document.getElementById('unitsDisplay').innerText = units.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('costDisplay').innerText = cost.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         });
     });
 
-    // ตอนเปิดเว็บ โหลดหน่วยงานทันที
+    // โหลดหน่วยงานเข้า Dropdown เมื่อเปิดเว็บสำเร็จ
     window.onload = async () => {
         try {
             let res = await fetchGAS({ action: 'getDepts' });
@@ -193,13 +204,15 @@
                         select.innerHTML += `<option value="${row[1]}" data-group="${row[0]}">[${row[0]}] ${row[1]}</option>`;
                     }
                 });
+            } else {
+                throw new Error(res.message);
             }
         } catch (err) {
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลหน่วยงานได้', 'error');
+            Swal.fire({ icon: 'error', title: 'การเชื่อมต่อล้มเหลว', text: 'ไม่สามารถดึงรายชื่อหน่วยงานได้ โปรดตรวจสอบ URL หรือการตั้งค่าการ Deploy' });
         }
     };
 
-    // บันทึก หรือ แก้ไขข้อมูล
+    // ฟังก์ชันบันทึกข้อมูลและแจ้งเตือนผ่าน SweetAlert2
     async function saveData(e) {
         e.preventDefault();
         let recordId = document.getElementById('recordId').value;
@@ -222,77 +235,72 @@
         let payload = { action: actionType, data: payloadData };
         if(recordId) payload.id = recordId;
 
-        // SweetAlert Loading
         Swal.fire({
-            title: 'กำลังบันทึกข้อมูล...',
+            title: 'กำลังส่งข้อมูล...',
+            text: 'โปรดรอสักครู่ระบบกำลังบันทึกลงฐานข้อมูล',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
 
         try {
-            await fetchGAS(payload);
-            Swal.fire({
-                icon: 'success',
-                title: 'สำเร็จ',
-                text: 'บันทึกข้อมูลเรียบร้อยแล้ว',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            document.getElementById('recordForm').reset();
-            document.getElementById('unitsDisplay').innerText = '0.00';
-            document.getElementById('costDisplay').innerText = '0.00';
-            cancelEdit(); // เคลียร์โหมดแก้ไข (ถ้ามี)
-            
+            let res = await fetchGAS(payload);
+            if(res.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'ข้อมูลได้รับการจัดเก็บเรียบร้อยแล้ว', timer: 2000, showConfirmButton: false });
+                document.getElementById('recordForm').reset();
+                document.getElementById('unitsDisplay').innerText = '0.00';
+                document.getElementById('costDisplay').innerText = '0.00';
+                cancelEdit();
+            } else {
+                throw new Error(res.message);
+            }
         } catch (err) {
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกข้อมูลได้: ' + err.message });
         }
     }
 
-    // ดึงข้อมูลสำหรับหน้าตาราง
+    // โหลดข้อมูลมาแสดงผลบนตารางในหน้าข้อมูลทั้งหมด
     async function loadSummaryData() {
-        document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+        document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-success my-3" role="status"></div><br>กำลังดึงข้อมูลล่าสุด...</td></tr>';
         try {
             let res = await fetchGAS({ action: 'getData' });
             if (res.status === 'success') {
-                allData = res.data; // [Date, ID, Group, Dept, Category, Name, Qty, Watt, Hours, Units, Cost]
                 let tbody = document.getElementById('summaryTableBody');
                 tbody.innerHTML = '';
                 
-                if(allData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>';
+                if(res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">ยังไม่พบข้อมูลดิบในชีต Data</td></tr>';
                     return;
                 }
 
-                // เรียงข้อมูลล่าสุดขึ้นก่อน
-                let displayData = [...allData].reverse();
+                // สลับเอาข้อมูลล่าสุดแสดงด้านบนสุด
+                let displayData = [...res.data].reverse();
 
                 displayData.forEach(row => {
-                    let dateStr = new Date(row[0]).toLocaleDateString('th-TH');
                     tbody.innerHTML += `
                         <tr>
-                            <td>${dateStr}</td>
-                            <td>${row[3]}</td>
+                            <td class="small">${row[0]}</td>
+                            <td><span class="badge bg-secondary mb-1">${row[2]}</span><br><strong>${row[3]}</strong></td>
                             <td>${row[5]} <br><small class="text-muted">(${row[4]})</small></td>
                             <td>${parseFloat(row[9]).toFixed(2)}</td>
-                            <td class="text-danger fw-bold">${parseFloat(row[10]).toFixed(2)}</td>
+                            <td class="text-danger fw-bold">${parseFloat(row[10]).toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
                             <td>
-                                <button class="btn btn-sm btn-warning" onclick='setupEdit(${JSON.stringify(row)})'>✏️ แก้ไข</button>
+                                <button class="btn btn-sm btn-warning fw-bold" onclick='setupEdit(${JSON.stringify(row)})'>✏️ แก้ไข</button>
                             </td>
                         </tr>
                     `;
                 });
             }
         } catch (err) {
-            document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
+            document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ดึงข้อมูลไม่สำเร็จ โปรดลองอีกครั้งในภายหลัง</td></tr>';
         }
     }
 
-    // นำข้อมูลกลับไปฟอร์มเพื่อแก้ไข
+    // ส่งข้อมูลแถวนั้นๆ กลับไปยังแบบฟอร์มเพื่อแก้ไขข้อมูล
     function setupEdit(row) {
-        showPage('page-record', document.querySelector('.nav-link.active')); // เด้งกลับไปหน้าบันทึก
+        let navLinkRecord = document.querySelector('.navbar-nav .nav-link');
+        showPage('page-record', navLinkRecord);
         
-        document.getElementById('recordId').value = row[1]; // ID
+        document.getElementById('recordId').value = row[1];
         document.getElementById('dept').value = row[3];
         document.getElementById('category').value = row[4];
         document.getElementById('name').value = row[5];
@@ -300,10 +308,9 @@
         document.getElementById('watt').value = row[7];
         document.getElementById('hours').value = row[8];
         
-        // จำลองการพิมพ์เพื่อกระตุ้นให้คำนวณใหม่
         document.getElementById('qty').dispatchEvent(new Event('input'));
         
-        document.getElementById('btnSave').innerHTML = '🔄 อัปเดตข้อมูล';
+        document.getElementById('btnSave').innerHTML = '🔄 อัปเดตการแก้ไขข้อมูล';
         document.getElementById('btnSave').classList.replace('btn-success', 'btn-warning');
         document.getElementById('btnCancelEdit').classList.remove('d-none');
     }
@@ -318,21 +325,18 @@
         document.getElementById('btnCancelEdit').classList.add('d-none');
     }
 
-    // ระบบ Dashboard (Chart.js)
+    // ระบบจัดหมวดหมู่สร้างกราฟ Dashboard ด้วย Chart.js
     async function loadDashboard() {
-        Swal.fire({ title: 'กำลังประมวลผลข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังคำนวณสถิติ...', text: 'ระบบกำลังประมวลผลกราฟข้อมูลแดชบอร์ด', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         try {
-            // ดึงข้อมูลใหม่เสมอเพื่อให้ Dashboard เป็นปัจจุบัน
             let res = await fetchGAS({ action: 'getData' });
-            allData = res.data; 
+            if(res.status !== 'success') throw new Error(res.message);
 
-            // จัดกลุ่มข้อมูลแยกตาม "หน่วยงาน" สำหรับกราฟแท่ง
             let costByDept = {};
-            // จัดกลุ่มข้อมูลแยกตาม "ประเภทอุปกรณ์" สำหรับกราฟโดนัท
             let costByCategory = {};
 
-            allData.forEach(row => {
+            res.data.forEach(row => {
                 let dept = row[3];
                 let category = row[4];
                 let cost = parseFloat(row[10]) || 0;
@@ -341,7 +345,7 @@
                 costByCategory[category] = (costByCategory[category] || 0) + cost;
             });
 
-            // สร้างกราฟแท่ง (Bar Chart)
+            // 1. กราฟแท่งแสดงตามหน่วยงาน
             if(barChartInstance) barChartInstance.destroy();
             let barCtx = document.getElementById('barChart').getContext('2d');
             barChartInstance = new Chart(barCtx, {
@@ -349,18 +353,16 @@
                 data: {
                     labels: Object.keys(costByDept),
                     datasets: [{
-                        label: 'ค่าไฟต่อวัน (บาท)',
+                        label: 'ประมาณการค่าไฟ/วัน (บาท)',
                         data: Object.values(costByDept),
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1,
-                        borderRadius: 5
+                        backgroundColor: '#198754',
+                        borderRadius: 6
                     }]
                 },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
             });
 
-            // สร้างกราฟโดนัท (Doughnut Chart)
+            // 2. กราฟวงกลมแสดงสัดส่วนประเภทอุปกรณ์
             if(pieChartInstance) pieChartInstance.destroy();
             let pieCtx = document.getElementById('pieChart').getContext('2d');
             pieChartInstance = new Chart(pieCtx, {
@@ -369,9 +371,7 @@
                     labels: Object.keys(costByCategory),
                     datasets: [{
                         data: Object.values(costByCategory),
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ]
+                        backgroundColor: ['#fd7e14', '#0d6efd', '#ffc107', '#20c997', '#6f42c1', '#adb5bd']
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -379,7 +379,7 @@
 
             Swal.close();
         } catch (err) {
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้าง Dashboard ได้', 'error');
+            Swal.fire({ icon: 'error', title: 'แดชบอร์ดล้มเหลว', text: 'ไม่สามารถสรุปผลสถิติได้เนื่องจากไม่มีข้อมูลดิบ' });
         }
     }
 </script>
