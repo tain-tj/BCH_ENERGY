@@ -20,7 +20,6 @@
         .table-responsive { border-radius: 12px; overflow: hidden; }
         .nav-link { cursor: pointer; }
         
-        /* สไตล์สำหรับหัวตารางที่กดคลิกเรียงลำดับได้ */
         .sortable { cursor: pointer; position: relative; user-select: none; }
         .sortable:hover { background-color: #146c43 !important; color: #fff; }
         .sort-icon { font-size: 0.8rem; margin-left: 5px; }
@@ -30,7 +29,7 @@
             .responsive-table tbody tr { display: block; background: #fff; margin-bottom: 15px; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px; }
             .responsive-table tbody td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 6px 10px; text-align: right; }
             .responsive-table tbody td::before { content: attr(data-label); font-weight: 600; text-align: left; color: #495057; }
-            .responsive-table tbody td .btn { width: 100%; margin-top: 5px; }
+            .responsive-table tbody td .btn { width: 48%; display: inline-block; margin-top: 5px; }
         }
     </style>
 </head>
@@ -55,6 +54,33 @@
 <div class="container mt-4 mb-5">
     <div id="page-record" class="page-section active card p-4 shadow">
         <h4 class="mb-4 text-success fw-bold">บันทึกการใช้พลังงานไฟฟ้า</h4>
+        
+        <div class="card bg-light p-3 border-0 mb-4 rounded-3">
+            <h6 class="fw-bold text-dark mb-2">🧮 เครื่องมือช่วยคำนวณกำลังไฟวัตต์ (สำหรับแอร์บ้าน / Chiller ส่วนกลาง)</h6>
+            <div class="row g-2">
+                <div class="col-12 col-md-3">
+                    <select class="form-select form-select-sm" id="calcType" onchange="toggleCalcFields()">
+                        <option value="btu">แอร์บ้านทั่วไป (BTU)</option>
+                        <option value="chiller_water">Chiller ระบายความร้อนด้วยน้ำ (TR)</option>
+                        <option value="chiller_air">Chiller ระบายความร้อนด้วยอากาศ (TR)</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <input type="number" class="form-control form-control-sm" id="calcSize" placeholder="ขนาด BTU หรือ ตัน (TR)" value="12000" oninput="runPowerConverter()">
+                </div>
+                <div class="col-6 col-md-3">
+                    <input type="number" step="0.01" class="form-control form-control-sm" id="calcEff" placeholder="ค่า SEER หรือ kW/TR" value="12.5" oninput="runPowerConverter()">
+                </div>
+                <div class="col-6 col-md-3 chiller-opt d-none">
+                    <input type="number" class="form-control form-control-sm" id="calcLF" placeholder="Load Factor %" value="75" oninput="runPowerConverter()">
+                </div>
+                <div class="col-12 d-flex justify-content-between align-items-center mt-2">
+                    <span class="small text-muted fw-medium">กำลังไฟคำนวณได้: <strong class="text-primary fs-5" id="calcResultDisplay">960</strong> วัตต์</span>
+                    <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="applyCalculatedWatts()">📌 ดึงตัวเลขไปใช้ในฟอร์ม</button>
+                </div>
+            </div>
+        </div>
+
         <form id="recordForm" onsubmit="saveData(event)">
             <input type="hidden" id="recordId">
             <div class="row g-3">
@@ -119,11 +145,11 @@
         <h4 class="mb-3 text-success fw-bold">ข้อมูลการใช้พลังงานทั้งหมด</h4>
         
         <div class="row g-2 mb-4 p-3 bg-light rounded-3">
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <label class="form-label small fw-bold text-secondary">กรองตามหน่วยงาน</label>
                 <select class="form-select" id="tableFilterDept" onchange="filterTableData()"></select>
             </div>
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <label class="form-label small fw-bold text-secondary">กรองตามประเภทอุปกรณ์</label>
                 <select class="form-select" id="tableFilterCategory" onchange="filterTableData()">
                     <option value="">-- ทั้งหมด --</option>
@@ -135,8 +161,9 @@
                     <option value="เครื่องใช้ไฟฟ้าอื่นๆ">เครื่องใช้ไฟฟ้าอื่นๆ</option>
                 </select>
             </div>
-            <div class="col-12 col-md-2 d-flex align-items-end">
-                <button class="btn btn-secondary w-100" onclick="clearTableFilters()">🔄 ล้างตัวกรอง</button>
+            <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+                <button class="btn btn-secondary w-50" onclick="clearTableFilters()">🔄 ล้างตัวกรอง</button>
+                <button class="btn btn-primary w-50" onclick="exportToExcelCSV()">📥 Export Excel</button>
             </div>
         </div>
 
@@ -216,7 +243,7 @@
             <div class="col-12 col-xl-8 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท) แยกตามหน่วยงาน</h6>
-                    <div style="position: relative; height:350px;">
+                    <div style="position: relative; height:300px;">
                         <canvas id="barChart"></canvas>
                     </div>
                 </div>
@@ -224,7 +251,7 @@
             <div class="col-12 col-xl-4 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
                     <h6 class="fw-bold text-secondary mb-3 text-center">สัดส่วนค่าใช้จ่ายตามประเภทอุปกรณ์ (%)</h6>
-                    <div style="position: relative; height:350px;">
+                    <div style="position: relative; height:300px;">
                         <canvas id="pieChart"></canvas>
                     </div>
                 </div>
@@ -236,18 +263,16 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // 🔴 วาง Web App URL ตัวล่าสุดที่ได้จากการ Deploy ที่นี่ครับ
     const API_URL = 'https://script.google.com/macros/s/AKfycbwI3pgRpmnz8DmhxB9CHm8MGuUHfM23Zhc_6Qoqodm_jsLtT5RvfyHo3YSta9h72u6S5Q/exec'; 
     let allData = []; 
     let filteredTableDataList = [];
     let barChartInstance = null;
     let pieChartInstance = null;
     
-    // สถานะสำหรับการจัดการตาราง
     let currentPage = 1;
     const itemsPerPage = 50;
-    let currentSortColumn = 0; // คอลัมน์เริ่มต้นคือ "วันที่บันทึก"
-    let currentSortDirection = 'desc'; // ล่าสุดขึ้นก่อน
+    let currentSortColumn = 0; 
+    let currentSortDirection = 'desc'; 
 
     async function fetchGAS(payload) {
         return fetch(API_URL, {
@@ -269,7 +294,52 @@
         }
     }
 
-    // ระบบคำนวณแบบฟอร์มบันทึกแบบ Real-time
+    // ฟังก์ชันย่อยของระบบคำนวณแปลงค่า BTU / Chiller
+    function toggleCalcFields() {
+        let type = document.getElementById('calcType').value;
+        let sizeInput = document.getElementById('calcSize');
+        let effInput = document.getElementById('calcEff');
+        let lfField = document.querySelector('.chiller-opt');
+
+        if(type === 'btu') {
+            sizeInput.placeholder = "ขนาดแอร์ (BTU)";
+            effInput.placeholder = "ค่า SEER / EER";
+            sizeInput.value = "12000";
+            effInput.value = "12.5";
+            lfField.classList.add('d-none');
+        } else {
+            sizeInput.placeholder = "ขนาด Chiller (TR - ตัน)";
+            effInput.placeholder = "ประสิทธิภาพ (kW/TR)";
+            sizeInput.value = "350";
+            effInput.value = "0.90"; // รวมอุปกรณ์ส่วนควบทั้ง Chiller Plant แล้ว
+            lfField.classList.remove('d-none');
+        }
+        runPowerConverter();
+    }
+
+    function runPowerConverter() {
+        let type = document.getElementById('calcType').value;
+        let size = parseFloat(document.getElementById('calcSize').value) || 0;
+        let eff = parseFloat(document.getElementById('calcEff').value) || 1;
+        let lf = parseFloat(document.getElementById('calcLF').value) || 100;
+        let watts = 0;
+
+        if (type === 'btu') {
+            watts = size / eff;
+        } else {
+            // สูตรคำนวณ: TR * kW/TR * (Load Factor/100) * 1000วัตต์
+            watts = size * eff * (lf / 100) * 1000;
+        }
+        document.getElementById('calcResultDisplay').innerText = Math.round(watts).toLocaleString('th-TH');
+    }
+
+    function applyCalculatedWatts() {
+        let wattsStr = document.getElementById('calcResultDisplay').innerText.replace(/,/g, '');
+        document.getElementById('watt').value = wattsStr;
+        document.getElementById('watt').dispatchEvent(new Event('input')); // กระตุ้นการคำนวณของฟอร์มใหญ่
+        Swal.fire({ icon: 'success', title: 'ดึงตัวเลขกำลังไฟเรียบร้อย', timer: 1000, showConfirmButton: false });
+    }
+
     document.querySelectorAll('.calc-input').forEach(input => {
         input.addEventListener('input', () => {
             let qty = parseFloat(document.getElementById('qty').value) || 0;
@@ -287,7 +357,6 @@
         });
     });
 
-    // โหลดรายชื่อหน่วยงานเข้าระบบคัดกรองทั้งหมด
     window.onload = async () => {
         try {
             let res = await fetchGAS({ action: 'getDepts' });
@@ -312,9 +381,9 @@
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'ดึงรายชื่อหน่วยงานล้มเหลว' });
         }
+        runPowerConverter(); // สั่งให้แปลงวัตต์เริ่มต้นทำงาน
     };
 
-    // บันทึกและส่งข้อมูล
     async function saveData(e) {
         e.preventDefault();
         let recordId = document.getElementById('recordId').value;
@@ -353,7 +422,6 @@
         }
     }
 
-    // โหลดและจัดการตารางหน้าข้อมูลทั้งหมด
     async function loadSummaryData() {
         document.getElementById('summaryTableBody').innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-success my-3"></div><br>กำลังดึงข้อมูล...</td></tr>';
         try {
@@ -367,7 +435,6 @@
         }
     }
 
-    // ระบบฟิลเตอร์ข้อมูลในตาราง
     function filterTableData() {
         let fDept = document.getElementById('tableFilterDept').value;
         let fCat = document.getElementById('tableFilterCategory').value;
@@ -378,7 +445,6 @@
             return matchDept && matchCat;
         });
 
-        // หลังจากฟิลเตอร์ให้ทำการเรียงลำดับซ้ำอีกครั้งตามคอลัมน์ที่เลือกค้างไว้
         executeSort();
         currentPage = 1; 
         renderTableRows();
@@ -390,25 +456,19 @@
         filterTableData();
     }
 
-    // ฟังก์ชันจัดการคลิกเปลี่ยนสถานะเรียงลำดับที่หัวข้อตาราง
     function sortTable(columnIndex) {
         if (currentSortColumn === columnIndex) {
-            // หากกดซ้ำคอลัมน์เดิม ให้สลับ ทิศทาง
             currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
         } else {
-            // หากกดคอลัมน์ใหม่ เริ่มต้นที่เรียงจากมากไปน้อย (desc) เสมอตามใจสั่ง
             currentSortColumn = columnIndex;
             currentSortDirection = 'desc';
         }
-        
-        // อัปเดตสัญลักษณ์ลูกศรที่หัวตาราง
         updateSortIcons();
         executeSort();
-        currentPage = 1; // กลับไปหน้าแรกหลังสลับลำดับข้อมูล
+        currentPage = 1; 
         renderTableRows();
     }
 
-    // จัดการเปลี่ยนรูปลูกศรบนหน้าจอ
     function updateSortIcons() {
         const columns = [0, 3, 5, 9, 10];
         columns.forEach(col => {
@@ -421,18 +481,15 @@
         });
     }
 
-    // ฟังก์ชันสั่งจัดการสลับตำแหน่ง Array ข้อมูลจริง
     function executeSort() {
         filteredTableDataList.sort((a, b) => {
             let valA = a[currentSortColumn];
             let valB = b[currentSortColumn];
 
-            // หากเป็นคอลัมน์ที่เป็นตัวเลข (หน่วย/วัน หรือ ค่าไฟ/วัน) แปลงเป็น Float เพื่อคำนวณก่อนเปรียบเทียบ
             if (currentSortColumn === 9 || currentSortColumn === 10 || currentSortColumn === 6 || currentSortColumn === 7) {
                 valA = parseFloat(valA) || 0;
                 valB = parseFloat(valB) || 0;
             } else {
-                // หากเป็น Text ทั่วไปให้เปรียบเทียบตามสายอักษรภาษาไทย
                 valA = valA.toString();
                 valB = valB.toString();
             }
@@ -443,7 +500,6 @@
         });
     }
 
-    // แสดงผลข้อมูลตารางตามเลขหน้า (หน้าละ 50 แถว)
     function renderTableRows() {
         let tbody = document.getElementById('summaryTableBody');
         tbody.innerHTML = '';
@@ -468,12 +524,69 @@
                     <td data-label="ค่าไฟ/วัน" class="text-danger fw-bold">${parseFloat(row[10]).toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
                     <td data-label="จัดการ">
                         <button class="btn btn-sm btn-warning fw-bold" onclick='setupEdit(${JSON.stringify(row)})'>✏️ แก้ไข</button>
+                        <button class="btn btn-sm btn-danger fw-bold" onclick='deleteRecord("${row[1]}")'>🗑️ ลบ</button>
                     </td>
                 </tr>
             `;
         });
 
         renderPaginationControls();
+    }
+
+    // ฟังก์ชันการทำงานของระบบลบข้อมูล (Delete) พร้อมระบบ SweetAlert2 ยืนยันสิทธิ์ก่อนลบ
+    async function deleteRecord(id) {
+        let confirmation = await Swal.fire({
+            title: 'ยืนยันการลบรายการ?',
+            text: "ข้อมูลนี้จะถูกลบออกจากชีตฐานข้อมูลถาวรและกู้คืนไม่ได้!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'ใช่, ฉันต้องการลบ',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (confirmation.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                let res = await fetchGAS({ action: 'deleteData', id: id });
+                if (res.status === 'success') {
+                    Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
+                    loadSummaryData(); // เรียกดึงข้อมูลใหม่เพื่อเขียนตารางใหม่ทันที
+                } else {
+                    throw new Error(res.message);
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+            }
+        }
+    }
+
+    // ฟังก์ชันการส่งออกข้อมูล (Export) เป็น Excel (.CSV) รองรับภาษาไทยในระบบ Excel
+    function exportToExcelCSV() {
+        if(filteredTableDataList.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'ไม่มีข้อมูล', text: 'ไม่พบแถวข้อมูลสำหรับส่งออกทำรายงานในขณะนี้' });
+            return;
+        }
+
+        let csvString = "\uFEFF"; // รหัสพิเศษ BOM เพื่อบังคับให้ Excel เปิดไฟล์ขึ้นมาเป็นภาษาไทยอ่านได้ 100%
+        csvString += "วันที่บันทึก,รหัสรันนิ่งไอดี,สายงาน,หน่วยงาน,ประเภทอุปกรณ์,ชื่อเครื่อง,จำนวนเครื่อง,กำลังไฟวัตต์,ชั่วโมงใช้งานต่อวัน,หน่วยไฟต่อวัน(kWh),ประมาณค่าไฟต่อวัน(บาท)\n";
+
+        filteredTableDataList.forEach(row => {
+            let processedRow = row.map(cellValue => {
+                let text = cellValue ? cellValue.toString().replace(/"/g, '""') : '';
+                return `"${text}"`;
+            });
+            csvString += processedRow.join(",") + "\n";
+        });
+
+        let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        let downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = `รายงานการใช้พลังงานไฟฟ้า_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.csv`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
     }
 
     function renderPaginationControls() {
@@ -498,7 +611,6 @@
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
-    // นำข้อมูลเข้าสู่โหมดแก้ไข
     function setupEdit(row) {
         showPage('page-record', document.querySelector('.navbar-nav .nav-link'));
         document.getElementById('recordId').value = row[1];
@@ -526,7 +638,6 @@
         document.getElementById('btnCancelEdit').classList.add('d-none');
     }
 
-    // สั่งโหลดข้อมูลเพื่ออัปเดตระบบ Dashboard
     async function loadDashboard() {
         Swal.fire({ title: 'กำลังคำนวณสถิติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
@@ -540,7 +651,6 @@
         }
     }
 
-    // ฟังก์ชันคำนวณสถิติและวาดกราฟอัปเดตตามตัวกรองในแดชบอร์ด
     function updateDashboardView() {
         let fDept = document.getElementById('dashFilterDept').value;
         let fCat = document.getElementById('dashFilterCategory').value;
@@ -568,7 +678,6 @@
             }
         });
 
-        // อัปเดตตัวเลขการคำนวณค่าไฟ (รายวัน / รายเดือน / รายปี)
         document.getElementById('sumUnitsDay').innerText = totalUnitsDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('sumCostDay').innerText = totalCostDay.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -578,7 +687,6 @@
         document.getElementById('sumUnitsYear').innerText = (totalUnitsDay * 365).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('sumCostYear').innerText = (totalCostDay * 365).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-        // เรนเดอร์กราฟแท่ง (Bar Chart)
         if(barChartInstance) barChartInstance.destroy();
         let barCtx = document.getElementById('barChart').getContext('2d');
         barChartInstance = new Chart(barCtx, {
@@ -595,10 +703,8 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
 
-        // คำนวณหาเปอร์เซ็นต์รวมทั้งหมดเพื่อส่งเข้าไปวาดและสลักลงเนื้อกราฟวงกลม
         let totalCategoryCostSum = Object.values(costByCategory).reduce((a, b) => a + b, 0);
 
-        // เรนเดอร์กราฟโดนัท (Doughnut Chart)
         if(pieChartInstance) pieChartInstance.destroy();
         let pieCtx = document.getElementById('pieChart').getContext('2d');
         pieChartInstance = new Chart(pieCtx, {
@@ -610,18 +716,18 @@
                     backgroundColor: ['#fd7e14', '#0d6efd', '#ffc107', '#20c997', '#6f42c1', '#adb5bd']
                 }]
             },
-            plugins: [ChartDataLabels], // เปิดใช้งานปลั๊กอิน DataLabels
+            plugins: [ChartDataLabels], 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
                 plugins: {
                     datalabels: {
-                        color: '#fff', // สีของตัวอักษรบนแถบกราฟ
+                        color: '#fff', 
                         font: { font: 'Prompt', weight: 'bold', size: 12 },
                         formatter: (value, ctx) => {
                             if(totalCategoryCostSum === 0) return "0%";
                             let percentage = ((value / totalCategoryCostSum) * 100).toFixed(1) + '%';
-                            return percentage; // สลักข้อความ % บนหน้าแผ่นกราฟ
+                            return percentage; 
                         },
                         anchor: 'center',
                         align: 'center'
