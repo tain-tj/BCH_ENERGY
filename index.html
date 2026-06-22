@@ -204,6 +204,28 @@
     <div id="page-dashboard" class="page-section card p-4 shadow">
         <h4 class="mb-3 text-success fw-bold">ภาพรวมสถิติพลังงาน</h4>
         
+        <div class="row g-2 mb-4 p-3 bg-light rounded-3">
+            <div class="col-12 col-md-5">
+                <label class="form-label small fw-bold text-secondary">กรองสถิติตามหน่วยงาน</label>
+                <select class="form-select" id="dashFilterDept" onchange="loadDashboard()"></select>
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label small fw-bold text-secondary">กรองสถิติตามประเภทอุปกรณ์</label>
+                <select class="form-select" id="dashFilterCategory" onchange="loadDashboard()">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="หลอดไฟ">หลอดไฟ</option>
+                    <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Computer">Computer</option>
+                    <option value="เครื่องมือแพทย์">เครื่องมือแพทย์</option>
+                    <option value="เครื่องใช้ไฟฟ้าอื่นๆ">เครื่องใช้ไฟฟ้าอื่นๆ</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex align-items-end">
+                <button class="btn btn-secondary w-100" onclick="clearDashFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+        </div>
+
         <div class="row g-3 mb-4 text-center">
             <div class="col-12 col-md-4">
                 <div class="card p-3 bg-white border-start border-primary border-4 shadow-sm">
@@ -236,7 +258,7 @@
             </div>
             <div class="col-12 col-xl-6 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
-                    <h6 class="fw-bold text-secondary mb-3 text-center">แนวโน้ม 5 หน่วยงานที่ใช้พลังงานสูงสุด (บาท/วัน)</h6>
+                    <h6 class="fw-bold text-secondary mb-3 text-center">แนวโน้มหน่วยงานที่ใช้พลังงานสูงสุด (บาท/วัน)</h6>
                     <div style="position: relative; height:300px;">
                         <canvas id="barChart"></canvas>
                     </div>
@@ -247,9 +269,35 @@
 
     <!-- ==================== หน้า 4: เปรียบเทียบหน่วยงาน (Compare) ==================== -->
     <div id="page-compare" class="page-section card p-4 shadow">
-        <h4 class="mb-3 text-success fw-bold">🏆 เปรียบเทียบการใช้ไฟฟ้าแต่ละหน่วยงาน</h4>
-        <p class="text-muted small">จัดอันดับหน่วยงานตามมูลค่าค่าใช้จ่ายพลังงานโดยประมาณ (บาท/วัน)</p>
+        <h4 class="mb-3 text-success fw-bold">🏆 เปรียบเทียบการใช้ไฟฟ้า</h4>
+        <p class="text-muted small">จัดอันดับหรือเลือกหน่วยงานเพื่อนำมาเปรียบเทียบค่าใช้จ่ายพลังงานโดยประมาณ (บาท/วัน)</p>
         
+        <div class="row g-2 mb-4 p-3 bg-light rounded-3">
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold text-primary">หน่วยงานที่ 1</label>
+                <select class="form-select border-primary" id="compFilterDept1" onchange="loadCompare()"></select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold text-danger">หน่วยงานที่ 2</label>
+                <select class="form-select border-danger" id="compFilterDept2" onchange="loadCompare()"></select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold text-secondary">ประเภทอุปกรณ์ (ทางเลือก)</label>
+                <select class="form-select" id="compFilterCategory" onchange="loadCompare()">
+                    <option value="">-- รวมทุกอุปกรณ์ --</option>
+                    <option value="หลอดไฟ">หลอดไฟ</option>
+                    <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Computer">Computer</option>
+                    <option value="เครื่องมือแพทย์">เครื่องมือแพทย์</option>
+                    <option value="เครื่องใช้ไฟฟ้าอื่นๆ">เครื่องใช้ไฟฟ้าอื่นๆ</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-1 d-flex align-items-end">
+                <button class="btn btn-secondary w-100" onclick="clearCompareFilters()" title="ล้างค่า"><small>🔄</small></button>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-12 col-lg-7 mb-4">
                 <div class="card p-3 shadow-sm border-0 h-100">
@@ -278,13 +326,20 @@
     <!-- ==================== หน้า 5: จำลองเป้าหมายลดค่าไฟ (Simulation) ==================== -->
     <div id="page-simulate" class="page-section card p-4 shadow">
         <h4 class="mb-3 text-warning fw-bold">💡 ระบบจำลองเป้าหมายลดค่าไฟ (What-If Analysis)</h4>
-        <p class="text-muted small">ลองปรับเปอร์เซ็นต์การลดการใช้งานของอุปกรณ์แต่ละประเภท เพื่อดูจำนวนเงินที่จะประหยัดได้</p>
+        <p class="text-muted small">เลือกหน่วยงานและลองปรับเปอร์เซ็นต์การลดการใช้งาน เพื่อดูจำนวนเงินที่จะประหยัดได้</p>
         
+        <div class="row g-2 mb-4 p-3 bg-light rounded-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label small fw-bold text-secondary">เลือกหน่วยงานที่ต้องการประเมินเป้าหมาย</label>
+                <select class="form-select border-warning" id="simFilterDept" onchange="fetchSimulateData()"></select>
+            </div>
+        </div>
+
         <div class="row g-4 mt-2">
             <!-- ซ้าย: ส่วนควบคุมเป้าหมาย (Sliders) -->
             <div class="col-12 col-lg-6">
                 <div class="card p-4 bg-light border-0 shadow-sm h-100">
-                    <h6 class="fw-bold text-dark mb-4">กำหนดเป้าหมายลดการใช้งาน</h6>
+                    <h6 class="fw-bold text-dark mb-4">ปรับเปอร์เซ็นต์เป้าหมายลดการใช้งาน</h6>
                     
                     <div class="mb-4">
                         <div class="d-flex justify-content-between">
@@ -316,23 +371,29 @@
             <div class="col-12 col-lg-6">
                 <div class="row g-3">
                     <div class="col-6">
-                        <div class="card p-3 border-0 bg-white shadow-sm sim-card">
-                            <span class="text-muted small fw-bold">ค่าไฟปัจจุบัน (บาท/เดือน)</span>
-                            <h4 class="text-danger fw-bold mt-2" id="simCurrentMonth">0</h4>
+                        <div class="card p-3 border-0 bg-white shadow-sm sim-card h-100 text-center">
+                            <span class="text-muted small fw-bold">ค่าไฟปัจจุบัน</span>
+                            <h4 class="text-danger fw-bold mt-2 mb-0" id="simCurrentMonth">0</h4>
+                            <span class="small text-muted d-block mb-2">บาท/เดือน</span>
+                            <h5 class="text-danger fw-bold mb-0" id="simCurrentYear">0</h5>
+                            <span class="small text-muted">บาท/ปี</span>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card p-3 border-0 bg-white shadow-sm sim-card">
-                            <span class="text-muted small fw-bold">ค่าไฟหลังลด (บาท/เดือน)</span>
-                            <h4 class="text-success fw-bold mt-2" id="simTargetMonth">0</h4>
+                        <div class="card p-3 border-0 bg-white shadow-sm sim-card h-100 text-center">
+                            <span class="text-muted small fw-bold">ค่าไฟเป้าหมาย (หลังลด)</span>
+                            <h4 class="text-success fw-bold mt-2 mb-0" id="simTargetMonth">0</h4>
+                            <span class="small text-muted d-block mb-2">บาท/เดือน</span>
+                            <h5 class="text-success fw-bold mb-0" id="simTargetYear">0</h5>
+                            <span class="small text-muted">บาท/ปี</span>
                         </div>
                     </div>
                     <div class="col-12 mt-3">
                         <div class="card p-4 border-0 bg-success text-white shadow sim-card text-center">
-                            <span class="fw-bold fs-5">🎉 คุณจะประหยัดเงินให้องค์กรได้</span>
-                            <h1 class="fw-bold display-4 my-2"><span id="simSavedMonth">0</span> <span class="fs-4">บาท/เดือน</span></h1>
+                            <span class="fw-bold fs-5">🎉 ประหยัดเงินให้องค์กรได้</span>
+                            <h1 class="fw-bold display-4 my-2"><span id="simSavedMonth">0</span> <span class="fs-5">บาท/เดือน</span></h1>
                             <span class="bg-white text-success px-3 py-1 rounded-pill fw-bold mt-2 d-inline-block">
-                                คิดเป็นประหยัดได้ปีละ <span id="simSavedYear">0</span> บาท
+                                หรือคิดเป็น <span id="simSavedYear">0</span> บาท/ปี
                             </span>
                         </div>
                     </div>
@@ -342,7 +403,7 @@
             <!-- กราฟเปรียบเทียบก่อน-หลัง -->
             <div class="col-12 mt-4">
                 <div class="card p-3 shadow-sm border-0">
-                    <h6 class="text-center fw-bold text-secondary mb-3">กราฟเปรียบเทียบค่าใช้จ่ายรายเดือน (Before vs After)</h6>
+                    <h6 class="text-center fw-bold text-secondary mb-3">กราฟเปรียบเทียบค่าใช้จ่ายรายปี (Before vs After)</h6>
                     <div style="position: relative; height:250px;">
                         <canvas id="simulateChart"></canvas>
                     </div>
@@ -355,7 +416,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // 🔴 วาง Web App URL ตัวล่าสุดที่ได้จากการ Deploy ที่นี่ครับ
     const API_URL = 'https://script.google.com/macros/s/AKfycbwI3pgRpmnz8DmhxB9CHm8MGuUHfM23Zhc_6Qoqodm_jsLtT5RvfyHo3YSta9h72u6S5Q/exec'; 
     let allData = []; 
     let filteredTableDataList = [];
@@ -366,21 +426,15 @@
     let compareChartInstance = null;
     let simulateChartInstance = null;
     
-    // สถานะสำหรับการจัดการตาราง
     let currentPage = 1;
     const itemsPerPage = 50;
     let currentSortColumn = 0; 
     let currentSortDirection = 'desc'; 
     
-    // โกลบอลตัวแปรเก็บข้อมูลสถิติที่ประมวลจาก Server
-    let globalBaselineStats = null;
+    let currentSimulateStats = null; // เก็บสถิติสำหรับหน้าจำลองโดยเฉพาะ
 
     async function fetchGAS(payload) {
-        return fetch(API_URL, {
-            method: 'POST',
-            mode: 'cors',
-            body: JSON.stringify(payload)
-        }).then(res => res.json());
+        return fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(payload) }).then(res => res.json());
     }
 
     function showPage(pageId, element) {
@@ -390,9 +444,7 @@
         if(element) element.classList.add('active');
         
         let navbarCollapse = document.getElementById('navbarNav');
-        if(navbarCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(navbarCollapse).toggle();
-        }
+        if(navbarCollapse.classList.contains('show')) new bootstrap.Collapse(navbarCollapse).toggle();
     }
 
     /* === ฟังก์ชันการคำนวณกำลังไฟ === */
@@ -403,17 +455,11 @@
         let lfField = document.querySelector('.chiller-opt');
 
         if(type === 'btu') {
-            sizeInput.placeholder = "ขนาดแอร์ (BTU)";
-            effInput.placeholder = "ค่า SEER / EER";
-            sizeInput.value = "12000";
-            effInput.value = "12.5";
-            lfField.classList.add('d-none');
+            sizeInput.placeholder = "ขนาดแอร์ (BTU)"; effInput.placeholder = "ค่า SEER / EER";
+            sizeInput.value = "12000"; effInput.value = "12.5"; lfField.classList.add('d-none');
         } else {
-            sizeInput.placeholder = "ขนาด Chiller (TR - ตัน)";
-            effInput.placeholder = "ประสิทธิภาพ (kW/TR)";
-            sizeInput.value = "350";
-            effInput.value = "0.90"; 
-            lfField.classList.remove('d-none');
+            sizeInput.placeholder = "ขนาด Chiller (TR - ตัน)"; effInput.placeholder = "ประสิทธิภาพ (kW/TR)";
+            sizeInput.value = "350"; effInput.value = "0.90"; lfField.classList.remove('d-none');
         }
         runPowerConverter();
     }
@@ -423,13 +469,7 @@
         let size = parseFloat(document.getElementById('calcSize').value) || 0;
         let eff = parseFloat(document.getElementById('calcEff').value) || 1;
         let lf = parseFloat(document.getElementById('calcLF').value) || 100;
-        let watts = 0;
-
-        if (type === 'btu') {
-            watts = size / eff;
-        } else {
-            watts = size * eff * (lf / 100) * 1000;
-        }
+        let watts = (type === 'btu') ? (size / eff) : (size * eff * (lf / 100) * 1000);
         document.getElementById('calcResultDisplay').innerText = Math.round(watts).toLocaleString('th-TH');
     }
 
@@ -450,42 +490,49 @@
             let units = (watt * qty * hours) / 1000;
             let cost = units * rate;
 
-            document.getElementById('units').value = units.toFixed(2);
-            document.getElementById('cost').value = cost.toFixed(2);
+            document.getElementById('units').value = units.toFixed(2); document.getElementById('cost').value = cost.toFixed(2);
             document.getElementById('unitsDisplay').innerText = units.toLocaleString('th-TH', {minimumFractionDigits: 2});
             document.getElementById('costDisplay').innerText = cost.toLocaleString('th-TH', {minimumFractionDigits: 2});
         });
     });
 
-    /* === ตอนเปิดหน้าเว็บ (Onload) === */
+    /* === ตอนเปิดหน้าเว็บ (Onload) จัดการ Dropdown ต่างๆ === */
     window.onload = async () => {
         try {
             let res = await fetchGAS({ action: 'getDepts' });
             if (res.status === 'success') {
                 let select = document.getElementById('dept');
                 let tFilter = document.getElementById('tableFilterDept');
+                let dFilter = document.getElementById('dashFilterDept');
+                let cFilter1 = document.getElementById('compFilterDept1');
+                let cFilter2 = document.getElementById('compFilterDept2');
+                let sFilter = document.getElementById('simFilterDept');
                 
                 select.innerHTML = '<option value="">-- เลือกหน่วยงาน --</option>';
                 let optionsHtml = '<option value="">-- ทั้งหมด --</option>';
+                let optionsCompareHtml = '<option value="">-- ไม่ระบุ --</option>';
                 
                 res.data.forEach(row => {
                     if(row[1]) {
                         let opt = `<option value="${row[1]}" data-group="${row[0]}">[${row[0]}] ${row[1]}</option>`;
                         select.innerHTML += opt;
                         optionsHtml += `<option value="${row[1]}">${row[1]}</option>`;
+                        optionsCompareHtml += `<option value="${row[1]}">${row[1]}</option>`;
                     }
                 });
+                
                 tFilter.innerHTML = optionsHtml;
+                dFilter.innerHTML = optionsHtml;
+                cFilter1.innerHTML = optionsCompareHtml;
+                cFilter2.innerHTML = optionsCompareHtml;
+                sFilter.innerHTML = optionsHtml; // ใน Simulate หน้าต่างสามารถเลือก "ทั้งหมด" ได้ด้วย
             }
-        } catch (err) {
-            Swal.fire({ icon: 'error', title: 'ดึงรายชื่อหน่วยงานล้มเหลว' });
-        }
+        } catch (err) { Swal.fire({ icon: 'error', title: 'ดึงรายชื่อหน่วยงานล้มเหลว' }); }
         runPowerConverter(); 
     };
 
     /* === ฟังก์ชันบันทึกและจัดการตาราง === */
-    // ... [โค้ดส่วน saveData, loadSummaryData, Pagination, Export ทำงานเหมือนเดิมไม่มีเปลี่ยน] ...
-    async function saveData(e) { /* (ตัดโค้ดส่วนบันทึกที่เหมือนเดิมเพื่อไม่ให้ยาวเกินไป แต่ในไฟล์ใช้งานจริงให้คงไว้ตามบล็อกเดิม) */
+    async function saveData(e) {
         e.preventDefault();
         let recordId = document.getElementById('recordId').value;
         let selectDept = document.getElementById('dept');
@@ -516,7 +563,6 @@
                 document.getElementById('unitsDisplay').innerText = '0.00';
                 document.getElementById('costDisplay').innerText = '0.00';
                 cancelEdit();
-                globalBaselineStats = null; // Reset ข้อมูลภาพรวมเพื่อให้โหลดใหม่
             }
         } catch (err) { Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message }); }
     }
@@ -559,7 +605,6 @@
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">ไม่พบข้อมูลที่ตรงตามเงื่อนไขการค้นหา</td></tr>';
             document.getElementById('tablePagination').innerHTML = ''; return;
         }
-
         pageData.forEach(row => {
             tbody.innerHTML += `<tr>
                 <td data-label="วันที่บันทึก" class="small">${row[0]}</td>
@@ -589,27 +634,17 @@
     
     function setupEdit(row) {
         showPage('page-record', document.querySelector('.navbar-nav .nav-link'));
-        document.getElementById('recordId').value = row[1];
-        document.getElementById('dept').value = row[3];
-        document.getElementById('category').value = row[4];
-        document.getElementById('name').value = row[5];
-        document.getElementById('qty').value = row[6];
-        document.getElementById('watt').value = row[7];
-        document.getElementById('hours').value = row[8];
-        document.getElementById('qty').dispatchEvent(new Event('input'));
-        document.getElementById('btnSave').innerHTML = '🔄 อัปเดตการแก้ไขข้อมูล';
-        document.getElementById('btnSave').classList.replace('btn-success', 'btn-warning');
-        document.getElementById('btnCancelEdit').classList.remove('d-none');
+        document.getElementById('recordId').value = row[1]; document.getElementById('dept').value = row[3];
+        document.getElementById('category').value = row[4]; document.getElementById('name').value = row[5];
+        document.getElementById('qty').value = row[6]; document.getElementById('watt').value = row[7];
+        document.getElementById('hours').value = row[8]; document.getElementById('qty').dispatchEvent(new Event('input'));
+        document.getElementById('btnSave').innerHTML = '🔄 อัปเดตการแก้ไขข้อมูล'; document.getElementById('btnSave').classList.replace('btn-success', 'btn-warning'); document.getElementById('btnCancelEdit').classList.remove('d-none');
     }
 
     function cancelEdit() {
-        document.getElementById('recordId').value = '';
-        document.getElementById('recordForm').reset();
-        document.getElementById('unitsDisplay').innerText = '0.00';
-        document.getElementById('costDisplay').innerText = '0.00';
-        document.getElementById('btnSave').innerHTML = '💾 บันทึกข้อมูล';
-        document.getElementById('btnSave').classList.replace('btn-warning', 'btn-success');
-        document.getElementById('btnCancelEdit').classList.add('d-none');
+        document.getElementById('recordId').value = ''; document.getElementById('recordForm').reset();
+        document.getElementById('unitsDisplay').innerText = '0.00'; document.getElementById('costDisplay').innerText = '0.00';
+        document.getElementById('btnSave').innerHTML = '💾 บันทึกข้อมูล'; document.getElementById('btnSave').classList.replace('btn-warning', 'btn-success'); document.getElementById('btnCancelEdit').classList.add('d-none');
     }
 
     async function deleteRecord(id) {
@@ -617,7 +652,7 @@
         if (confirmation.isConfirmed) {
             Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             let res = await fetchGAS({ action: 'deleteData', id: id });
-            if (res.status === 'success') { Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1500 }); loadSummaryData(); globalBaselineStats = null; }
+            if (res.status === 'success') { Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1500 }); loadSummaryData(); }
         }
     }
 
@@ -628,26 +663,24 @@
             let csvString = "\uFEFFวันที่บันทึก,รหัสไอดี,สายงาน,หน่วยงาน,ประเภทอุปกรณ์,ชื่อเครื่อง,จำนวนเครื่อง,กำลังไฟวัตต์,ชั่วโมงใช้งานต่อวัน,หน่วยไฟต่อวัน(kWh),ประมาณค่าไฟต่อวัน(บาท)\n";
             res.data.forEach(row => { csvString += row.map(cellValue => `"${(cellValue?cellValue.toString():'').replace(/"/g, '""')}"`).join(",") + "\n"; });
             let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            let downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(blob); downloadLink.download = `รายงานพลังงาน_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.csv`;
+            let downloadLink = document.createElement("a"); downloadLink.href = URL.createObjectURL(blob); downloadLink.download = `รายงานพลังงาน_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.csv`;
             document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink); Swal.close();
         } else { Swal.fire({ icon: 'warning', title: 'ไม่มีข้อมูล' }); }
     }
 
-    /* === ฟังก์ชันแกนกลาง (โหลด Data ก้อนสรุปจาก Server เพียงครั้งเดียวและเก็บไว้ใช้ร่วมกัน) === */
-    async function getBaseStatsFromServer() {
-        if (globalBaselineStats) return globalBaselineStats; // ถ้ามีข้อมูลอยู่แล้วใช้ของเดิม ไม่ต้องโหลดใหม่ให้ช้า
-        let payload = { action: 'getDashboardStats', filterDept: "", filterCategory: "" };
-        let res = await fetchGAS(payload);
-        if(res.status === 'success') { globalBaselineStats = res.stats; return res.stats; }
-        throw new Error("Cannot load baseline stats");
-    }
-
     /* === หน้า Dashboard (ภาพรวม) === */
     async function loadDashboard() {
-        Swal.fire({ title: 'กำลังโหลดกราฟสถิติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังโหลดภาพรวมสถิติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            let stats = await getBaseStatsFromServer();
+            // ส่งค่า Filter กลับไปดึงข้อมูลเฉพาะกลุ่มแบบ Real-time
+            let payload = {
+                action: 'getDashboardStats',
+                filterDept: document.getElementById('dashFilterDept').value,
+                filterCategory: document.getElementById('dashFilterCategory').value
+            };
+            let res = await fetchGAS(payload);
+            let stats = res.stats;
+            
             let totalUnitsDay = stats.totalUnitsDay;
             let totalCostDay = stats.totalCostDay;
             
@@ -655,7 +688,7 @@
             document.getElementById('sumCostMonth').innerText = (totalCostDay * 30).toLocaleString('th-TH', {minimumFractionDigits: 0});
             document.getElementById('sumCostYear').innerText = (totalCostDay * 365).toLocaleString('th-TH', {minimumFractionDigits: 0});
 
-            // ดึงเฉพาะ 5 อันดับแรกมาทำ Bar Chart
+            // สร้าง Bar Chart 5 อันดับ (หรือตามหน่วยงานที่ถูก Filter)
             let sortedDepts = Object.entries(stats.costByDept).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let labelsBar = sortedDepts.map(item => item[0]);
             let dataBar = sortedDepts.map(item => item[1]);
@@ -668,6 +701,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
+            // สร้าง Pie Chart
             let totalCatCost = Object.values(stats.costByCategory).reduce((a, b) => a + b, 0);
             if(pieChartInstance) pieChartInstance.destroy();
             let pieCtx = document.getElementById('pieChart').getContext('2d');
@@ -686,68 +720,103 @@
             Swal.close();
         } catch (err) { Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการโหลดแดชบอร์ด' }); }
     }
+    
+    function clearDashFilters() { document.getElementById('dashFilterDept').value = ""; document.getElementById('dashFilterCategory').value = ""; loadDashboard(); }
 
-    /* === หน้า Compare (จัดอันดับเปรียบเทียบทุกหน่วยงาน) === */
+    /* === หน้า Compare (เปรียบเทียบ) === */
     async function loadCompare() {
         Swal.fire({ title: 'กำลังวิเคราะห์อันดับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            let stats = await getBaseStatsFromServer();
+            // โหลดสถิติ โดยอิงจาก Filter ประเภทอุปกรณ์ที่เลือก แต่ไม่ล็อกหน่วยงานจาก API 
+            let payload = { action: 'getDashboardStats', filterDept: "", filterCategory: document.getElementById('compFilterCategory').value };
+            let res = await fetchGAS(payload);
+            let stats = res.stats;
             
-            // แปลง Object เป็น Array แล้วเรียงลำดับจากมากไปน้อย
-            let sortedDepts = Object.entries(stats.costByDept).sort((a,b) => b[1] - a[1]);
+            let dept1 = document.getElementById('compFilterDept1').value;
+            let dept2 = document.getElementById('compFilterDept2').value;
             
-            // แสดงข้อมูลในตาราง
+            let dataToCompare = [];
+            
+            if (dept1 || dept2) {
+                // กรณีมีการเลือกหน่วยงานที่ 1 หรือ 2
+                if (dept1) dataToCompare.push({ name: dept1, cost: stats.costByDept[dept1] || 0 });
+                if (dept2 && dept1 !== dept2) dataToCompare.push({ name: dept2, cost: stats.costByDept[dept2] || 0 });
+            } else {
+                // ค่าเริ่มต้นแสดง Top 5
+                let sortedDepts = Object.entries(stats.costByDept).sort((a,b) => b[1] - a[1]).slice(0, 5);
+                dataToCompare = sortedDepts.map(i => ({name: i[0], cost: i[1]}));
+            }
+
+            // จัดเรียงใหม่เสมอจากมากไปน้อยเพื่อการแสดงผล
+            dataToCompare.sort((a, b) => b.cost - a.cost);
+
+            // แสดงในตาราง
             let tbody = document.getElementById('compareTableBody');
             tbody.innerHTML = '';
-            sortedDepts.forEach((item, index) => {
+            dataToCompare.forEach((item, index) => {
                 let badgeRank = index === 0 ? '🥇 1' : (index === 1 ? '🥈 2' : (index === 2 ? '🥉 3' : (index + 1)));
-                let rowHtml = `<tr>
+                tbody.innerHTML += `<tr>
                     <td><span class="fw-bold">${badgeRank}</span></td>
-                    <td class="text-start">${item[0]}</td>
-                    <td class="text-danger fw-bold">${item[1].toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                    <td class="text-start">${item.name}</td>
+                    <td class="text-danger fw-bold">${item.cost.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
                 </tr>`;
-                tbody.innerHTML += rowHtml;
             });
 
-            // สร้างกราฟแนวนอน (Horizontal Bar) สำหรับเปรียบเทียบ
+            // วาดกราฟแท่ง
             if(compareChartInstance) compareChartInstance.destroy();
             let ctx = document.getElementById('compareChart').getContext('2d');
             compareChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: sortedDepts.map(i => i[0]),
+                    labels: dataToCompare.map(i => i.name),
                     datasets: [{
                         label: 'ประมาณการค่าไฟ/วัน (บาท)',
-                        data: sortedDepts.map(i => i[1]),
-                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                        borderColor: '#dc3545',
+                        data: dataToCompare.map(i => i.cost),
+                        backgroundColor: ['rgba(13, 110, 253, 0.7)', 'rgba(220, 53, 69, 0.7)', '#ffc107', '#20c997', '#0dcaf0'],
                         borderWidth: 1,
                         borderRadius: 4
                     }]
                 },
                 options: { 
-                    indexAxis: 'y', // เปลี่ยนกราฟแท่งเป็นแนวนอน
+                    indexAxis: 'x', // แนวตั้งเพื่อให้เห็นชัดเจนเมื่อเปรียบเทียบ
                     responsive: true, maintainAspectRatio: false,
-                    scales: { x: { beginAtZero: true } }
+                    scales: { y: { beginAtZero: true } }
                 }
             });
 
             Swal.close();
-        } catch (err) { Swal.fire({ icon: 'error', title: 'ดึงข้อมูลล้มเหลว' }); }
+        } catch (err) { Swal.fire({ icon: 'error', title: 'ดึงข้อมูลเปรียบเทียบล้มเหลว' }); }
+    }
+    
+    function clearCompareFilters() {
+        document.getElementById('compFilterDept1').value = "";
+        document.getElementById('compFilterDept2').value = "";
+        document.getElementById('compFilterCategory').value = "";
+        loadCompare();
     }
 
     /* === หน้า Simulate (ระบบจำลองลดค่าไฟ) === */
-    async function loadSimulate() {
-        Swal.fire({ title: 'กำลังโหลดข้อมูลฐาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    async function fetchSimulateData() {
+        Swal.fire({ title: 'กำลังโหลดข้อมูลหน่วยงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            await getBaseStatsFromServer();
-            runSimulation(); // คำนวณครั้งแรกที่ 0%
+            let payload = { action: 'getDashboardStats', filterDept: document.getElementById('simFilterDept').value, filterCategory: "" };
+            let res = await fetchGAS(payload);
+            currentSimulateStats = res.stats;
+            runSimulation(); // คำนวณครั้งแรกที่ 0% อัตโนมัติ
             Swal.close();
         } catch (err) { Swal.fire({ icon: 'error', title: 'โหลดข้อมูลจำลองล้มเหลว' }); }
     }
 
+    function loadSimulate() {
+        if(!currentSimulateStats) {
+            fetchSimulateData(); // โหลดครั้งแรก
+        } else {
+            runSimulation();
+        }
+    }
+
     function runSimulation() {
-        if(!globalBaselineStats) return;
+        if(!currentSimulateStats) return;
 
         // รับค่าเปอร์เซ็นต์จาก Slider
         let pcAc = parseInt(document.getElementById('simAc').value) || 0;
@@ -758,43 +827,51 @@
         document.getElementById('valLight').innerText = `ลดลง ${pcLight}%`;
         document.getElementById('valOther').innerText = `ลดลง ${pcOther}%`;
 
-        // ต้นทุนฐานรายวันตามหมวดหมู่
-        let costAcDay = globalBaselineStats.costByCategory['เครื่องปรับอากาศ'] || 0;
-        let costLightDay = globalBaselineStats.costByCategory['หลอดไฟ'] || 0;
-        let totalBaseDay = globalBaselineStats.totalCostDay || 0;
+        // ต้นทุนฐานรายวันตามหมวดหมู่ จากตัวแปร currentSimulateStats
+        let costAcDay = currentSimulateStats.costByCategory['เครื่องปรับอากาศ'] || 0;
+        let costLightDay = currentSimulateStats.costByCategory['หลอดไฟ'] || 0;
+        let totalBaseDay = currentSimulateStats.totalCostDay || 0;
         let costOtherDay = totalBaseDay - costAcDay - costLightDay;
 
-        // คำนวณหลังหักส่วนลด (รายเดือน)
+        // แปลงเป็นรายเดือนและรายปี
         let costAcMonth = costAcDay * 30;
         let costLightMonth = costLightDay * 30;
         let costOtherMonth = costOtherDay * 30;
 
         let totalBaseMonth = costAcMonth + costLightMonth + costOtherMonth;
+        let totalBaseYear = totalBaseMonth * 12;
 
+        // คำนวณหลังหักส่วนลด
         let newAcMonth = costAcMonth * (1 - (pcAc / 100));
         let newLightMonth = costLightMonth * (1 - (pcLight / 100));
         let newOtherMonth = costOtherMonth * (1 - (pcOther / 100));
 
         let totalNewMonth = newAcMonth + newLightMonth + newOtherMonth;
+        let totalNewYear = totalNewMonth * 12;
+        
         let savedMonth = totalBaseMonth - totalNewMonth;
-        let savedYear = savedMonth * 12;
+        let savedYear = totalBaseYear - totalNewYear;
 
-        // อัปเดตตัวเลขขึ้น UI
+        // อัปเดตตัวเลขขึ้น UI 
         document.getElementById('simCurrentMonth').innerText = totalBaseMonth.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
+        document.getElementById('simCurrentYear').innerText = totalBaseYear.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
+        
         document.getElementById('simTargetMonth').innerText = totalNewMonth.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
+        document.getElementById('simTargetYear').innerText = totalNewYear.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
+        
         document.getElementById('simSavedMonth').innerText = savedMonth.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
         document.getElementById('simSavedYear').innerText = savedYear.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits:0});
 
-        // วาดกราฟแท่งเปรียบเทียบ (Bar Chart Compare)
+        // วาดกราฟแท่งเปรียบเทียบ (Before vs After แบบรายปี)
         if(simulateChartInstance) simulateChartInstance.destroy();
         let ctx = document.getElementById('simulateChart').getContext('2d');
         simulateChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['ค่าไฟปัจจุบัน (บาท/เดือน)', 'คาดการณ์ค่าไฟเป้าหมาย (บาท/เดือน)'],
+                labels: ['ค่าไฟปัจจุบัน (บาท/ปี)', 'คาดการณ์ค่าไฟเป้าหมาย (บาท/ปี)'],
                 datasets: [{
                     label: 'งบประมาณ',
-                    data: [totalBaseMonth, totalNewMonth],
+                    data: [totalBaseYear, totalNewYear],
                     backgroundColor: ['#dc3545', '#198754'], // แดง-เขียว
                     borderRadius: 8
                 }]
